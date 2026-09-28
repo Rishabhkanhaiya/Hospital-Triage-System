@@ -10,7 +10,7 @@ Developed as a Course Project by 2nd Year B.Tech students in the **Department of
 1. **Rishabh Joshi** (1251070307)
 2. **Ujjwal Jain** (1251071062)
 3. **Shubham Kale** (1251071039)
-4. **Harshad Mahadik** (1251071041)
+
 
 ---
 
