@@ -1,0 +1,10 @@
+# Compiled Binaries
+*.exe
+*.o
+*.obj
+
+# Temporary / OS files
+.DS_Store
+Thumbs.db
+*.tmp
+temp_diagrams/
