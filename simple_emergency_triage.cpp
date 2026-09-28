@@ -7,33 +7,28 @@
 
 using namespace std;
 
-// ============================================================================
-// 1. ENCAPSULATION: Vitals Class
-// Private variables with public getters and setters that validate inputs.
-// ============================================================================
+// ==========================================
+// Part 1: Vitals Class
+// ==========================================
 class Vitals {
 private:
-    int heartRate;       // Beats per minute (normal: 60-100)
-    int systolicBP;      // Blood Pressure (normal: 90-120)
-    int spo2;            // Oxygen Saturation % (normal: 95-100)
+    int heartRate;
+    int systolicBP;
+    int spo2;
 
 public:
-    // Default constructor
     Vitals() : heartRate(75), systolicBP(120), spo2(98) {}
 
-    // Parameterized constructor
     Vitals(int hr, int bp, int o2) {
         setHeartRate(hr);
         setSystolicBP(bp);
         setSpo2(o2);
     }
 
-    // Getters
     int getHeartRate() const { return heartRate; }
     int getSystolicBP() const { return systolicBP; }
     int getSpo2() const { return spo2; }
 
-    // Setters with validation (Throws exception if invalid)
     void setHeartRate(int hr) {
         if (hr < 0 || hr > 300) {
             throw invalid_argument("Heart Rate must be between 0 and 300 bpm.");
@@ -61,10 +56,9 @@ public:
     }
 };
 
-// ============================================================================
-// 2. INHERITANCE: Base Class (Person)
-// Demonstrates base class with protected members and a virtual destructor.
-// ============================================================================
+// ==========================================
+// Part 2: Person Class
+// ==========================================
 class Person {
 protected:
     string id;
@@ -76,7 +70,6 @@ public:
     Person(string id, string name, int age, string phone)
         : id(id), name(name), age(age), phone(phone) {}
 
-    // Virtual destructor is important so derived classes are properly destroyed
     virtual ~Person() {}
 
     string getId() const { return id; }
@@ -84,23 +77,21 @@ public:
     int getAge() const { return age; }
     string getPhone() const { return phone; }
 
-    // Virtual function for runtime polymorphism
     virtual void displayDetails() const {
         cout << "ID: " << id << " | Name: " << name 
              << " | Age: " << age << " | Phone: " << phone << "\n";
     }
 };
 
-// ============================================================================
-// 3. INHERITANCE & OPERATOR OVERLOADING: Derived Class (Patient)
-// Patient 'is-a' Person and 'has-a' Vitals object (Composition).
-// ============================================================================
+// ==========================================
+// Part 3: Patient Class
+// ==========================================
 class Patient : public Person {
 protected:
     string chiefComplaint;
     Vitals vitals;
-    int priorityLevel;   // 1 = Critical (Red), 2 = Urgent (Yellow), 3 = Normal (Green)
-    int arrivalOrder;    // For FIFO tie-breaker if priority is the same
+    int priorityLevel;
+    int arrivalOrder;
 
 public:
     Patient(string id, string name, int age, string phone, string complaint, Vitals v, int order = 0)
@@ -116,14 +107,12 @@ public:
     void setArrivalOrder(int order) { arrivalOrder = order; }
     void updateVitals(const Vitals& v) { vitals = v; }
 
-    // Return priority as colored text
     string getPriorityString() const {
         if (priorityLevel == 1) return "[LEVEL 1 - CRITICAL (RED)]";
         if (priorityLevel == 2) return "[LEVEL 2 - URGENT (YELLOW)]";
         return "[LEVEL 3 - NORMAL (GREEN)]";
     }
 
-    // Overridden display function (Runtime Polymorphism)
     virtual void displayDetails() const override {
         Person::displayDetails();
         cout << "   Complaint: " << chiefComplaint << "\n";
@@ -133,24 +122,17 @@ public:
         cout << "\n";
     }
 
-    // ========================================================================
-    // OPERATOR OVERLOADING (<)
-    // Used to sort patients by priority in the waiting list!
-    // Priority 1 comes before Priority 2, which comes before Priority 3.
-    // If priorities are equal, the patient who arrived first (smaller order) goes first.
-    // ========================================================================
     bool operator<(const Patient& other) const {
         if (this->priorityLevel != other.priorityLevel) {
-            return this->priorityLevel < other.priorityLevel; // 1 comes before 2
+            return this->priorityLevel < other.priorityLevel;
         }
-        return this->arrivalOrder < other.arrivalOrder;       // Earlier arrival first
+        return this->arrivalOrder < other.arrivalOrder;
     }
 };
 
-// ============================================================================
-// 4. POLYMORPHISM: Specialized Derived Classes
-// CardiacPatient and TraumaPatient inherit from Patient and override displayDetails.
-// ============================================================================
+// ==========================================
+// Part 4: Specialized Patient Classes
+// ==========================================
 class CardiacPatient : public Patient {
 private:
     bool severeChestPain;
@@ -187,69 +169,54 @@ public:
     }
 };
 
-// ============================================================================
-// 5. SYSTEM CONTROLLER: HospitalSystem Class
-// Manages the patient list, automatic triage, re-triage, and file I/O.
-// ============================================================================
+// ==========================================
+// Part 5: Hospital System
+// ==========================================
 class HospitalSystem {
 private:
-    vector<Patient*> waitingQueue;  // Pointers to base class (Demonstrating Polymorphism)
+    vector<Patient*> waitingQueue;
     int patientCounter;
 
 public:
     HospitalSystem() : patientCounter(0) {}
 
     ~HospitalSystem() {
-        // Clean up allocated memory
         for (Patient* p : waitingQueue) {
             delete p;
         }
         waitingQueue.clear();
     }
 
-    // Automatic Triage Scoring Algorithm
     int calculatePriority(const Vitals& v) {
-        // Critical conditions (Priority 1 - Red):
-        // Very low oxygen (< 88%), extreme heart rate (> 130 or < 45), very low BP (< 80)
         if (v.getSpo2() < 88 || v.getHeartRate() > 130 || v.getHeartRate() < 45 || v.getSystolicBP() < 80) {
-            return 1; // Critical
+            return 1;
         }
-        // Urgent conditions (Priority 2 - Yellow):
-        // Low oxygen (< 94%), high heart rate (> 100), high BP (> 160 or < 90)
         if (v.getSpo2() < 94 || v.getHeartRate() > 100 || v.getSystolicBP() > 160 || v.getSystolicBP() < 90) {
-            return 2; // Urgent
+            return 2;
         }
-        // Otherwise normal (Priority 3 - Green)
         return 3;
     }
 
-    // Register a new patient
     void registerPatient(Patient* p) {
         patientCounter++;
         p->setArrivalOrder(patientCounter);
 
-        // Calculate priority automatically based on vitals
         int priority = calculatePriority(p->getVitals());
         p->setPriorityLevel(priority);
 
-        // Add to waiting list
         waitingQueue.push_back(p);
-
-        // Sort queue by priority using operator<
         sortQueue();
 
         cout << "\n>>> [PATIENT REGISTERED SUCCESSFULLY] <<<\n";
         cout << "Name: " << p->getName() << " | Assigned Priority: " << p->getPriorityString() << "\n";
     }
 
-    // Sort the queue so Priority 1 is first
     void sortQueue() {
         sort(waitingQueue.begin(), waitingQueue.end(), [](Patient* a, Patient* b) {
-            return (*a) < (*b); // Calls overloaded operator<
+            return (*a) < (*b);
         });
     }
 
-    // Display the live queue
     void displayQueue() const {
         cout << "\n====================================================================================\n";
         cout << "                       EMERGENCY ROOM LIVE TRIAGE QUEUE BOARD                       \n";
@@ -272,7 +239,6 @@ public:
         }
     }
 
-    // Admit next patient (Remove highest priority patient from queue)
     void admitNextPatient() {
         if (waitingQueue.empty()) {
             cout << "\n[!] Waiting queue is empty. No patient to call.\n";
@@ -285,14 +251,13 @@ public:
         cout << "\n======================================================================\n";
         cout << "               >>> CALLING NEXT PATIENT TO DOCTOR BAY <<<             \n";
         cout << "======================================================================\n";
-        nextPatient->displayDetails(); // Polymorphic call!
+        nextPatient->displayDetails();
         cout << "Action: Patient transferred to Doctor Consultation / Trauma Bay.\n";
         cout << "======================================================================\n";
 
-        delete nextPatient; // Free memory after treatment
+        delete nextPatient;
     }
 
-    // Dynamic Re-Triage: If a waiting patient gets worse, update vitals and priority!
     void reTriagePatient(string id, int newHR, int newBP, int newSpO2) {
         for (Patient* p : waitingQueue) {
             if (p->getId() == id) {
@@ -303,7 +268,6 @@ public:
                 int newPriority = calculatePriority(newV);
                 p->setPriorityLevel(newPriority);
 
-                // Re-sort the queue so their rank updates immediately!
                 sortQueue();
 
                 cout << "\n>>> [RE-TRIAGE COMPLETED] <<<\n";
@@ -317,7 +281,6 @@ public:
         cout << "\n[!] Patient ID '" << id << "' not found in the waiting list.\n";
     }
 
-    // Save report to file (File Handling)
     void saveReportToFile(string filename = "triage_report.txt") const {
         ofstream outFile(filename);
         if (!outFile) {
@@ -349,22 +312,17 @@ public:
         cout << "\n>>> Triage report successfully saved to '" << filename << "' <<<\n";
     }
 
-    // Pre-load sample patients for fast viva demonstration!
     void loadSamplePatients() {
-        // Patient 1: Mild sprain (Priority 3 - Green)
         Vitals v1(72, 118, 99);
         registerPatient(new Patient("P101", "Siddharth Verma", 29, "+91-9876500001", "Mild ankle sprain", v1));
 
-        // Patient 2: High fever & cough (Priority 2 - Urgent/Yellow)
         Vitals v2(108, 125, 93);
         registerPatient(new Patient("P102", "Ananya Sen", 24, "+91-9876500002", "High fever with breathing difficulty", v2));
 
-        // Patient 3: Cardiac Emergency with crushing chest pain (Priority 1 - Critical/Red)
         Vitals v3(140, 75, 87);
         registerPatient(new CardiacPatient("P103", "Rajesh Sharma", 58, "+91-9876500003", 
                                            "Crushing chest pain radiating to left arm", v3, true, "ST Elevation Present"));
 
-        // Patient 4: Trauma Accident (Priority 1 - Critical/Red)
         Vitals v4(135, 78, 86);
         registerPatient(new TraumaPatient("P104", "Vikram Malhotra", 32, "+91-9876500004", 
                                           "Bike accident with severe bleeding", v4, "Compound Fracture", true));
@@ -373,9 +331,9 @@ public:
     }
 };
 
-// ============================================================================
-// 6. MAIN FUNCTION: Simple User Menu
-// ============================================================================
+// ==========================================
+// Part 6: Main Function
+// ==========================================
 int main() {
     HospitalSystem hospital;
     int choice;
@@ -442,7 +400,7 @@ int main() {
                     cout << "  SpO2 Oxygen Saturation (% e.g. 98): "; cin >> o2;
                     cin.ignore();
 
-                    Vitals v(hr, bp, o2); // Throws exception if invalid
+                    Vitals v(hr, bp, o2);
 
                     if (typeChoice == 2) {
                         hospital.registerPatient(new CardiacPatient(id, name, age, phone, complaint, v, true, "Normal"));
